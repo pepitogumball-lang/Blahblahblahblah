@@ -1,15 +1,4 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">File Explorer</string>
-    <string name="permission_title">Permiso de almacenamiento requerido</string>
-    <string name="permission_rationale">Esta app necesita acceso al almacenamiento para que puedas explorar los archivos y carpetas de tu dispositivo. Sin este permiso la app no puede funcionar.</string>
-    <string name="permission_button_grant">Conceder acceso</string>
-    <string name="permission_button_settings">Abrir ajustes</string>
-    <string name="nav_up">Subir nivel</string>
-    <string name="nav_home">Inicio</string>
-    <string name="refresh">Refrescar</string>
-    <string name="empty_folder">Carpeta vacía</string>
-    <string name="files_label">archivos</string>
-    <string name="folders_label">carpetas</string>
-    <string name="storage_root">Almacenamiento</string>
 </resources>

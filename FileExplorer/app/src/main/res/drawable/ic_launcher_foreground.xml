@@ -1,12 +1,76 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!--
+    Ícono de primer plano (foreground) del launcher — generado como vector drawable XML.
+    Representa una carpeta estilizada.
+
+    Viewport: 108 × 108 dp
+    Zona segura (safe zone): círculo de 66 dp centrado en (54, 54) → área (21,21)–(87,87)
+    El contenido importante está dentro de la zona segura para no cortarse
+    en iconos circulares, squircles ni cuadrados redondeados.
+
+    Recurso 100 % generado dentro del proyecto — sin copyright externo.
+-->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="108dp"
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
 
-    <!-- Carpeta — ícono simple dibujado con paths estándar -->
+    <!--
+        Forma de carpeta (folder shape).
+        Trazado en sentido horario:
+          1. Tab (lengüeta superior izquierda)
+          2. Cuerpo principal (rectángulo grande con esquinas redondeadas)
+
+        Puntos clave:
+          • (23,40) — unión tab–cuerpo en lado izquierdo
+          • (23,34) — inicio del tab (lado izquierdo)
+          • (27,30) — esquina superior izquierda del tab (redondeada)
+          • (46,30) — parte superior del tab
+          • (51,33) — esquina superior derecha del tab (redondeada)
+          • (54,40) — diagonal de cierre del tab, unión con el cuerpo
+          • (85,40) — parte superior del cuerpo (derecha)
+          • (89,44) — esquina superior derecha del cuerpo
+          • (89,75) — parte inferior del cuerpo (derecha)
+          • (85,79) — esquina inferior derecha del cuerpo
+          • (23,79) — parte inferior del cuerpo (izquierda)
+          • (19,75) — esquina inferior izquierda del cuerpo
+          • (19,44) — parte izquierda del cuerpo
+          • (23,40) — cierre (Z)
+    -->
     <path
         android:fillColor="#FFFFFF"
-        android:pathData="M20,35 C20,31.686 22.686,29 26,29 L46,29 L52,35 L82,35 C85.314,35 88,37.686 88,41 L88,73 C88,76.314 85.314,79 82,79 L26,79 C22.686,79 20,76.314 20,73 Z" />
+        android:pathData="
+            M23,40
+            L23,34 C23,31.8 24.8,30 27,30
+            L46,30 C48.2,30 50,31.2 51,33
+            L54,40
+            L85,40 C87.2,40 89,41.8 89,44
+            L89,75 C89,77.2 87.2,79 85,79
+            L23,79 C20.8,79 19,77.2 19,75
+            L19,44 C19,41.8 20.8,40 23,40 Z" />
+
+    <!--
+        Líneas internas que sugieren una lista de archivos.
+        Posicionadas dentro del cuerpo de la carpeta, centradas verticalmente.
+        Color levemente translúcido del fondo para no romper el contraste.
+    -->
+    <path
+        android:fillColor="#1565C0"
+        android:fillAlpha="0.35"
+        android:pathData="
+            M30,53 L78,53 C78.6,53 79,53.4 79,54
+            L79,55.5 C79,56.1 78.6,56.5 78,56.5
+            L30,56.5 C29.4,56.5 29,56.1 29,55.5
+            L29,54 C29,53.4 29.4,53 30,53 Z" />
+
+    <path
+        android:fillColor="#1565C0"
+        android:fillAlpha="0.35"
+        android:pathData="
+            M30,61 L66,61 C66.6,61 67,61.4 67,62
+            L67,63.5 C67,64.1 66.6,64.5 66,64.5
+            L30,64.5 C29.4,64.5 29,64.1 29,63.5
+            L29,62 C29,61.4 29.4,61 30,61 Z" />
+
 </vector>

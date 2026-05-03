@@ -1,5 +1,15 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!--
+    Fondo del ícono del launcher — generado como vector drawable XML.
+    Gradiente lineal de azul oscuro a azul medio (diagonal 315°).
+    Recurso 100 % generado dentro del proyecto — sin copyright externo.
+-->
 <shape xmlns:android="http://schemas.android.com/apk/res/android"
     android:shape="rectangle">
-    <solid android:color="#1976D2" />
+    <gradient
+        android:startColor="#0D47A1"
+        android:centerColor="#1565C0"
+        android:endColor="#1976D2"
+        android:angle="315"
+        android:type="linear" />
 </shape>

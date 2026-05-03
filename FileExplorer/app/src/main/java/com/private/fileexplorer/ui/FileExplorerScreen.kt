@@ -1,5 +1,7 @@
 package com.private.fileexplorer.ui
 
+import androidx.compose.animation.Crossfade
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -37,6 +39,7 @@ import androidx.compose.material.icons.filled.TextSnippet
 import androidx.compose.material.icons.filled.VideoFile
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
+import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
@@ -57,15 +60,17 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import com.private.fileexplorer.data.FileItem
 import com.private.fileexplorer.ui.theme.ColorFolder
 import com.private.fileexplorer.ui.theme.fileTypeColor
-import com.private.fileexplorer.util.FileItem
-import com.private.fileexplorer.util.FileManager
+import com.private.fileexplorer.utils.FileUtils
 import com.private.fileexplorer.viewmodel.ExplorerUiState
 import com.private.fileexplorer.viewmodel.FileExplorerViewModel
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+
+// ─── Pantalla principal ───────────────────────────────────────────────────────
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
@@ -75,25 +80,39 @@ fun FileExplorerScreen(viewModel: FileExplorerViewModel) {
     Scaffold(
         topBar = {
             ExplorerTopBar(
-                state = state,
-                onNavigateUp = { viewModel.navigateUp() },
+                state          = state,
+                onNavigateUp   = { viewModel.navigateUp() },
                 onNavigateHome = { viewModel.navigateHome() },
-                onRefresh = { viewModel.refresh() },
+                onRefresh      = { viewModel.refresh() },
                 onToggleHidden = { viewModel.toggleHiddenFiles() },
             )
         },
     ) { innerPadding ->
-        Box(
-            modifier = Modifier
+        // Crossfade suaviza la transición entre los estados de pantalla
+        val screenKey = when {
+            state.isLoading       -> "loading"
+            state.error != null   -> "error"
+            state.items.isEmpty() -> "empty"
+            else                  -> "content"
+        }
+
+        Crossfade(
+            targetState  = screenKey,
+            animationSpec = tween(durationMillis = 200),
+            label        = "explorer_state",
+            modifier     = Modifier
                 .fillMaxSize()
                 .padding(innerPadding),
-        ) {
-            when {
-                state.isLoading       -> LoadingIndicator()
-                state.error != null   -> ErrorMessage(state.error!!)
-                state.items.isEmpty() -> EmptyFolder()
-                else -> FileList(
-                    items = state.items,
+        ) { key ->
+            when (key) {
+                "loading" -> LoadingIndicator()
+                "error"   -> ErrorMessage(
+                    message   = state.error ?: "Error desconocido",
+                    onRetry   = { viewModel.refresh() },
+                )
+                "empty"   -> EmptyFolder()
+                else      -> FileList(
+                    items      = state.items,
                     onItemClick = { item ->
                         if (item.isDirectory) viewModel.navigateTo(item.file)
                     },
@@ -114,41 +133,52 @@ private fun ExplorerTopBar(
     onRefresh: () -> Unit,
     onToggleHidden: () -> Unit,
 ) {
-    val pathLabel = state.currentPath?.absolutePath ?: "Almacenamiento"
-    val shortPath = if (pathLabel.length > 44) "…${pathLabel.takeLast(41)}" else pathLabel
+    val folderName = state.currentPath?.name?.ifEmpty { "Almacenamiento" } ?: "Almacenamiento"
+    val fullPath   = state.currentPath?.absolutePath ?: ""
+    val shortPath  = if (fullPath.length > 48) "…${fullPath.takeLast(45)}" else fullPath
 
     TopAppBar(
         title = {
             Column {
                 Text(
-                    text = "File Explorer",
-                    style = MaterialTheme.typography.titleMedium,
-                )
-                Text(
-                    text = shortPath,
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    text     = folderName,
+                    style    = MaterialTheme.typography.titleMedium,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                 )
+                if (shortPath.isNotEmpty()) {
+                    Text(
+                        text     = shortPath,
+                        style    = MaterialTheme.typography.labelSmall,
+                        color    = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
             }
         },
         navigationIcon = {
             if (state.backStack.isNotEmpty()) {
                 IconButton(onClick = onNavigateUp) {
                     Icon(
-                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                        contentDescription = "Subir nivel",
+                        imageVector     = Icons.AutoMirrored.Filled.ArrowBack,
+                        contentDescription = "Subir un nivel",
                     )
                 }
             }
         },
         actions = {
             IconButton(onClick = onNavigateHome) {
-                Icon(Icons.Filled.Home, contentDescription = "Inicio")
+                Icon(
+                    imageVector        = Icons.Filled.Home,
+                    contentDescription = "Ir al inicio",
+                )
             }
             IconButton(onClick = onRefresh) {
-                Icon(Icons.Filled.Refresh, contentDescription = "Refrescar")
+                Icon(
+                    imageVector        = Icons.Filled.Refresh,
+                    contentDescription = "Refrescar",
+                )
             }
             IconButton(onClick = onToggleHidden) {
                 Icon(
@@ -160,12 +190,13 @@ private fun ExplorerTopBar(
             }
         },
         colors = TopAppBarDefaults.topAppBarColors(
-            containerColor = MaterialTheme.colorScheme.surface,
+            containerColor    = MaterialTheme.colorScheme.surface,
+            titleContentColor = MaterialTheme.colorScheme.onSurface,
         ),
     )
 }
 
-// ─── Lista de archivos ───────────────────────────────────────────────────────
+// ─── Lista de archivos ────────────────────────────────────────────────────────
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
@@ -173,15 +204,15 @@ private fun FileList(
     items: List<FileItem>,
     onItemClick: (FileItem) -> Unit,
 ) {
-    val folders = items.filter { it.isDirectory }
-    val files   = items.filter { !it.isDirectory }
+    val folders = remember(items) { items.filter { it.isDirectory } }
+    val files   = remember(items) { items.filter { !it.isDirectory } }
 
     LazyColumn(
-        modifier = Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(vertical = 8.dp),
+        modifier        = Modifier.fillMaxSize(),
+        contentPadding  = PaddingValues(bottom = 24.dp),
     ) {
         if (folders.isNotEmpty()) {
-            stickyHeader {
+            stickyHeader(key = "header_folders") {
                 SectionHeader(
                     label = "${folders.size} ${if (folders.size == 1) "carpeta" else "carpetas"}"
                 )
@@ -189,14 +220,15 @@ private fun FileList(
             items(folders, key = { it.file.absolutePath }) { item ->
                 FileItemRow(item = item, onClick = { onItemClick(item) })
                 HorizontalDivider(
+                    modifier  = Modifier.padding(start = 70.dp),
                     thickness = 0.5.dp,
-                    color = MaterialTheme.colorScheme.outlineVariant,
+                    color     = MaterialTheme.colorScheme.outlineVariant,
                 )
             }
         }
 
         if (files.isNotEmpty()) {
-            stickyHeader {
+            stickyHeader(key = "header_files") {
                 SectionHeader(
                     label = "${files.size} ${if (files.size == 1) "archivo" else "archivos"}"
                 )
@@ -204,8 +236,9 @@ private fun FileList(
             items(files, key = { it.file.absolutePath }) { item ->
                 FileItemRow(item = item, onClick = { onItemClick(item) })
                 HorizontalDivider(
+                    modifier  = Modifier.padding(start = 70.dp),
                     thickness = 0.5.dp,
-                    color = MaterialTheme.colorScheme.outlineVariant,
+                    color     = MaterialTheme.colorScheme.outlineVariant,
                 )
             }
         }
@@ -216,49 +249,50 @@ private fun FileList(
 private fun SectionHeader(label: String) {
     Surface(color = MaterialTheme.colorScheme.surfaceVariant) {
         Text(
-            text = label,
-            style = MaterialTheme.typography.labelMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            text     = label.uppercase(),
+            style    = MaterialTheme.typography.labelSmall,
+            color    = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 6.dp),
+                .padding(horizontal = 16.dp, vertical = 8.dp),
         )
     }
 }
 
 @Composable
 private fun FileItemRow(item: FileItem, onClick: () -> Unit) {
-    val dateFormat = remember { SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault()) }
+    val dateFormat = remember { SimpleDateFormat("dd/MM/yyyy  HH:mm", Locale.getDefault()) }
 
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .clickable(onClick = onClick)
-            .padding(horizontal = 16.dp, vertical = 10.dp),
+            .padding(horizontal = 16.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        FileTypeIcon(item = item, modifier = Modifier.size(40.dp))
+        // Ícono con fondo de color semitransparente
+        FileTypeIcon(item = item, modifier = Modifier.size(42.dp))
 
         Spacer(modifier = Modifier.width(14.dp))
 
         Column(modifier = Modifier.weight(1f)) {
             Text(
-                text = item.name,
-                style = MaterialTheme.typography.bodyMedium,
+                text     = item.name,
+                style    = MaterialTheme.typography.bodyMedium,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
             )
-            Spacer(modifier = Modifier.height(2.dp))
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            Spacer(modifier = Modifier.height(3.dp))
+            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                 if (!item.isDirectory) {
                     Text(
-                        text = FileManager.formatSize(item.size),
+                        text  = FileUtils.formatSize(item.size),
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
                 Text(
-                    text = dateFormat.format(Date(item.lastModified)),
+                    text  = dateFormat.format(Date(item.lastModified)),
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -266,11 +300,12 @@ private fun FileItemRow(item: FileItem, onClick: () -> Unit) {
         }
 
         if (item.isDirectory) {
+            Spacer(modifier = Modifier.width(4.dp))
             Icon(
-                imageVector = Icons.Filled.ChevronRight,
+                imageVector        = Icons.Filled.ChevronRight,
                 contentDescription = null,
-                tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.size(20.dp),
+                tint               = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier           = Modifier.size(20.dp),
             )
         }
     }
@@ -278,26 +313,26 @@ private fun FileItemRow(item: FileItem, onClick: () -> Unit) {
 
 @Composable
 private fun FileTypeIcon(item: FileItem, modifier: Modifier = Modifier) {
-    val icon = if (item.isDirectory) Icons.Filled.Folder else fileIconFor(item.extension)
+    val icon = if (item.isDirectory) Icons.Filled.Folder else iconForExtension(item.extension)
     val tint = if (item.isDirectory) ColorFolder else fileTypeColor(item.extension)
 
     Surface(
         modifier = modifier,
-        shape = MaterialTheme.shapes.small,
-        color = tint.copy(alpha = 0.12f),
+        shape    = MaterialTheme.shapes.small,
+        color    = tint.copy(alpha = 0.13f),
     ) {
         Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
             Icon(
-                imageVector = icon,
+                imageVector        = icon,
                 contentDescription = null,
-                tint = tint,
-                modifier = Modifier.size(24.dp),
+                tint               = tint,
+                modifier           = Modifier.size(24.dp),
             )
         }
     }
 }
 
-private fun fileIconFor(extension: String): ImageVector = when (extension.lowercase()) {
+private fun iconForExtension(ext: String): ImageVector = when (ext.lowercase()) {
     "jpg", "jpeg", "png", "gif", "webp", "bmp", "heic", "svg" -> Icons.Filled.Image
     "mp4", "mkv", "avi", "mov", "webm", "ts"                  -> Icons.Filled.VideoFile
     "mp3", "aac", "ogg", "flac", "wav", "m4a"                 -> Icons.Filled.AudioFile
@@ -312,34 +347,47 @@ private fun fileIconFor(extension: String): ImageVector = when (extension.lowerc
     else                                                        -> Icons.Filled.InsertDriveFile
 }
 
-// ─── Estados de UI ───────────────────────────────────────────────────────────
+// ─── Estados de la pantalla ───────────────────────────────────────────────────
 
 @Composable
 private fun LoadingIndicator() {
     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-        CircularProgressIndicator()
+        CircularProgressIndicator(
+            color     = MaterialTheme.colorScheme.primary,
+            modifier  = Modifier.size(48.dp),
+        )
     }
 }
 
 @Composable
-private fun ErrorMessage(message: String) {
+private fun ErrorMessage(message: String, onRetry: () -> Unit) {
     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
-            modifier = Modifier.padding(32.dp),
+            modifier            = Modifier.padding(32.dp),
         ) {
             Icon(
-                imageVector = Icons.Filled.Error,
+                imageVector        = Icons.Filled.Error,
                 contentDescription = null,
-                tint = MaterialTheme.colorScheme.error,
-                modifier = Modifier.size(48.dp),
+                tint               = MaterialTheme.colorScheme.error,
+                modifier           = Modifier.size(56.dp),
             )
             Spacer(modifier = Modifier.height(16.dp))
             Text(
-                text = message,
+                text  = message,
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
+            Spacer(modifier = Modifier.height(24.dp))
+            Button(onClick = onRetry) {
+                Icon(
+                    imageVector        = Icons.Filled.Refresh,
+                    contentDescription = null,
+                    modifier           = Modifier.size(18.dp),
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text("Reintentar")
+            }
         }
     }
 }
@@ -347,16 +395,19 @@ private fun ErrorMessage(message: String) {
 @Composable
 private fun EmptyFolder() {
     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            modifier            = Modifier.padding(32.dp),
+        ) {
             Icon(
-                imageVector = Icons.Filled.FolderOpen,
+                imageVector        = Icons.Filled.FolderOpen,
                 contentDescription = null,
-                tint = MaterialTheme.colorScheme.outline,
-                modifier = Modifier.size(64.dp),
+                tint               = MaterialTheme.colorScheme.outline,
+                modifier           = Modifier.size(72.dp),
             )
-            Spacer(modifier = Modifier.height(12.dp))
+            Spacer(modifier = Modifier.height(16.dp))
             Text(
-                text = "No hay archivos en esta carpeta",
+                text  = "No hay archivos en esta carpeta",
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )

@@ -12,6 +12,14 @@ import com.private.fileexplorer.ui.PermissionScreen
 import com.private.fileexplorer.ui.theme.FileExplorerTheme
 import com.private.fileexplorer.viewmodel.FileExplorerViewModel
 
+/**
+ * Única Activity de la app.
+ *
+ * Responsabilidades:
+ *  - Aplicar el tema
+ *  - Decidir qué pantalla mostrar según el estado de permisos
+ *  - Revalidar el permiso cada vez que la app vuelve a primer plano
+ */
 class MainActivity : ComponentActivity() {
 
     private val viewModel: FileExplorerViewModel by viewModels()
@@ -28,9 +36,7 @@ class MainActivity : ComponentActivity() {
                     FileExplorerScreen(viewModel = viewModel)
                 } else {
                     PermissionScreen(
-                        onPermissionGranted = {
-                            viewModel.refreshPermissionState()
-                        },
+                        onPermissionGranted = { viewModel.refreshPermissionState() },
                     )
                 }
             }
@@ -39,8 +45,8 @@ class MainActivity : ComponentActivity() {
 
     override fun onResume() {
         super.onResume()
-        // Revalida el permiso cada vez que el usuario vuelve a la app
-        // (por ejemplo, después de activarlo en los Ajustes del sistema).
+        // Se llama al volver de los Ajustes del sistema, de otra app, etc.
+        // Revalida el permiso sin que el usuario tenga que hacer nada más.
         viewModel.refreshPermissionState()
     }
 }
