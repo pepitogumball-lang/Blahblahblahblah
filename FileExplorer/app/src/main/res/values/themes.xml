@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Tema base requerido por el sistema antes de que Compose tome el control -->
+    <style name="Theme.FileExplorer" parent="android:Theme.Material.Light.NoActionBar" />
+</resources>

@@ -1,0 +1,10 @@
+# Copia este archivo como local.properties y ajusta la ruta al SDK de Android.
+# local.properties NO debe commitearse al repositorio (está en .gitignore).
+
+sdk.dir=/path/to/your/Android/Sdk
+
+# Ejemplo Linux/macOS:
+# sdk.dir=/home/usuario/Android/Sdk
+
+# Ejemplo Windows:
+# sdk.dir=C\:\\Users\\usuario\\AppData\\Local\\Android\\Sdk

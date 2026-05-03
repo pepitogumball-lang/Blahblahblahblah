@@ -1,0 +1,22 @@
+# Android / Gradle generados
+*.iml
+.gradle/
+local.properties
+.idea/
+.DS_Store
+build/
+captures/
+.externalNativeBuild/
+.cxx/
+
+# APKs y firmados — no commitear binarios
+*.apk
+*.aab
+*.keystore
+*.jks
+
+# Kotlin compilado
+*.class
+
+# Logs
+*.log
