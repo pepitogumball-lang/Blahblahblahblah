@@ -1,5 +1,7 @@
 name: Move Files
 on: workflow_dispatch
+permissions:
+  contents: write
 jobs:
   move:
     runs-on: ubuntu-latest
@@ -8,12 +10,21 @@ jobs:
       - name: Move files
         run: |
           shopt -s dotglob
-          cp -rn FileExplorer/* .
-          rm -rf FileExplorer
+          if [ -d "FileExplorer" ]; then
+            cp -rn FileExplorer/* .
+            rm -rf FileExplorer
+          else
+            echo "FileExplorer directory not found"
+          fi
       - name: Commit and push
         run: |
           git config --global user.name "Zapia AI"
           git config --global user.email "zapia@brainlogic.ai"
           git add .
-          git commit -m "Move files from FileExplorer to root" || echo "No changes"
-          git push
+          git status
+          if git diff --quiet && git diff --staged --quiet; then
+            echo "No changes to commit"
+          else
+            git commit -m "Move files from FileExplorer to root"
+            git push
+          fi
