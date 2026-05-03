@@ -39,17 +39,16 @@ jobs:
             ${{ runner.os }}-gradle-
 
       - name: Compilar APK debug
-        working-directory: FileExplorer
         run: gradle assembleDebug --stacktrace
 
       - name: Subir APK como artefacto
         uses: actions/upload-artifact@v4
         with:
           name: FileExplorer-debug-apk
-          path: FileExplorer/app/build/outputs/apk/debug/app-debug.apk
+          path: app/build/outputs/apk/debug/app-debug.apk
           retention-days: 30
 
       - name: Mostrar ruta del APK generado
         run: |
           echo "=== APK generado ==="
-          ls -lh FileExplorer/app/build/outputs/apk/debug/
+          ls -lh app/build/outputs/apk/debug/
