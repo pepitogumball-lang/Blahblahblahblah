@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+
+    <!-- Carpeta — ícono simple dibujado con paths estándar -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M20,35 C20,31.686 22.686,29 26,29 L46,29 L52,35 L82,35 C85.314,35 88,37.686 88,41 L88,73 C88,76.314 85.314,79 82,79 L26,79 C22.686,79 20,76.314 20,73 Z" />
+</vector>

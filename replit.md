@@ -1,78 +1,90 @@
-# FileExplorer — Proyecto Android + Git Automation
+# FileExplorer — App Android + Automatización Git
 
-## Descripción
-Repositorio con dos componentes:
+## Descripción del proyecto
 
-1. **`pusher.py`** — Script Python 3 para automatizar el flujo Git (add → commit → push a `main`).
-2. **`FileExplorer/`** — App Android privada en Kotlin/Jetpack Compose: explorador de archivos con permisos de almacenamiento completo.
+Repositorio con dos componentes principales:
+
+1. **`pusher.py`** — Script Python 3 para automatizar el flujo Git.
+   Uso: `python3 pusher.py`
+   Hace: verificación de repo → rama main → git add . → commit con timestamp → push.
+   Usa `GITHUB_PERSONAL_ACCESS_TOKEN` del entorno para autenticarse.
+
+2. **`FileExplorer/`** — App Android en Kotlin/Jetpack Compose.
+   Explorador de archivos con manejo correcto de permisos de almacenamiento por versión Android.
 
 ---
 
-## Estructura del repositorio
+## Estructura de archivos clave
 
 ```
 /
-├── pusher.py                          # Automatizador Git (ejecutar: python3 pusher.py)
-├── FileExplorer/
-│   ├── .github/workflows/build.yml   # CI: compila APK debug en cada push a main
-│   ├── app/
-│   │   ├── build.gradle
-│   │   ├── proguard-rules.pro
-│   │   └── src/main/
-│   │       ├── AndroidManifest.xml
-│   │       ├── java/com/private/fileexplorer/
-│   │       │   ├── MainActivity.kt
-│   │       │   ├── ui/
-│   │       │   │   ├── FileExplorerScreen.kt
-│   │       │   │   ├── PermissionScreen.kt
-│   │       │   │   └── theme/ (Color.kt, Theme.kt, Type.kt)
-│   │       │   ├── viewmodel/FileExplorerViewModel.kt
-│   │       │   └── util/ (FileManager.kt, PermissionHelper.kt)
-│   │       └── res/values/ (strings.xml, themes.xml)
-│   ├── build.gradle
-│   ├── settings.gradle
-│   ├── gradle.properties
-│   ├── gradle/wrapper/gradle-wrapper.properties
-│   ├── local.properties.example
-│   └── README.md
-└── replit.md
+├── pusher.py
+└── FileExplorer/
+    ├── .github/workflows/build.yml           # CI: compila APK debug en cada push a main
+    ├── app/
+    │   ├── build.gradle                      # AGP 8.2.2, Compose BOM 2024.02.01
+    │   └── src/main/
+    │       ├── AndroidManifest.xml
+    │       ├── java/com/private/fileexplorer/
+    │       │   ├── MainActivity.kt
+    │       │   ├── ui/FileExplorerScreen.kt
+    │       │   ├── ui/PermissionScreen.kt
+    │       │   ├── ui/theme/ (Color, Theme, Type)
+    │       │   ├── viewmodel/FileExplorerViewModel.kt
+    │       │   └── util/ (FileManager, PermissionHelper)
+    │       └── res/ (drawables, mipmap-anydpi-v26, values)
+    ├── build.gradle / settings.gradle / gradle.properties
+    ├── gradle/wrapper/gradle-wrapper.properties
+    ├── gradlew / gradlew.bat
+    └── README.md
 ```
 
 ---
 
-## Tecnologías
+## Stack técnico
 
 | Capa | Tecnología |
 |------|-----------|
 | Lenguaje | Kotlin 1.9.22 |
 | UI | Jetpack Compose + Material3 |
 | Arquitectura | ViewModel + StateFlow |
-| Permisos | Accompanist Permissions + lógica manual por API level |
+| Permisos | Lógica manual por API level (sin librerías extra) |
 | Build | Gradle 8.6 + AGP 8.2.2 |
-| CI/CD | GitHub Actions |
+| CI/CD | GitHub Actions — usa `gradle` directamente (sin wrapper jar) |
 | minSdk / targetSdk | 26 / 34 |
 
 ---
 
-## Uso rápido
+## Dependencias de la app
 
-### Subir cambios a GitHub
-```bash
-python3 pusher.py
-```
-Usa `GITHUB_PERSONAL_ACCESS_TOKEN` del entorno automáticamente.
+- `androidx.compose:compose-bom:2024.02.01`
+- `androidx.compose.material3:material3`
+- `androidx.compose.material:material-icons-extended`
+- `androidx.core:core-ktx:1.12.0`
+- `androidx.lifecycle:lifecycle-runtime-ktx:2.7.0`
+- `androidx.lifecycle:lifecycle-viewmodel-compose:2.7.0`
+- `androidx.activity:activity-compose:1.8.2`
 
-### Compilar APK localmente
-```bash
-cd FileExplorer
-./gradlew assembleDebug
-# APK en: app/build/outputs/apk/debug/app-debug.apk
-```
+No hay dependencias de terceros innecesarias.
 
-### CI en GitHub Actions
-Cada push a `main` compila y publica el APK como artefacto descargable.
+---
+
+## Permisos por versión Android
+
+- API 30+ (Android 11+): `MANAGE_EXTERNAL_STORAGE` → vía Ajustes del sistema
+- API 26–29: `READ_EXTERNAL_STORAGE` → diálogo estándar
 
 ---
 
 ## Secrets configurados
-- `GITHUB_PERSONAL_ACCESS_TOKEN` — usado por `pusher.py` para autenticación HTTPS en push.
+
+- `GITHUB_PERSONAL_ACCESS_TOKEN` — usado por pusher.py para autenticación HTTPS en push
+
+---
+
+## Notas importantes
+
+- El `gradle-wrapper.jar` no está en el repo (es binario). El CI usa `gradle` directamente.
+- Para compilar localmente con `./gradlew`, generar el jar con: `gradle wrapper --gradle-version 8.6`
+- El icono del launcher usa adaptive icons (mipmap-anydpi-v26) compatibles con minSdk 26.
+- `minifyEnabled` está desactivado en release para facilitar la depuración en uso privado.

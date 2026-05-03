@@ -1,24 +1,64 @@
 package com.private.fileexplorer.ui
 
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.*
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material.icons.filled.AudioFile
+import androidx.compose.material.icons.filled.ChevronRight
+import androidx.compose.material.icons.filled.Code
+import androidx.compose.material.icons.filled.Description
+import androidx.compose.material.icons.filled.Error
+import androidx.compose.material.icons.filled.Folder
+import androidx.compose.material.icons.filled.FolderOpen
+import androidx.compose.material.icons.filled.FolderZip
+import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.Image
+import androidx.compose.material.icons.filled.InsertDriveFile
+import androidx.compose.material.icons.filled.PictureAsPdf
+import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.Slideshow
+import androidx.compose.material.icons.filled.TableChart
+import androidx.compose.material.icons.filled.TextSnippet
+import androidx.compose.material.icons.filled.VideoFile
+import androidx.compose.material.icons.filled.Visibility
+import androidx.compose.material.icons.filled.VisibilityOff
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import com.private.fileexplorer.ui.theme.*
+import com.private.fileexplorer.ui.theme.ColorFolder
+import com.private.fileexplorer.ui.theme.fileTypeColor
 import com.private.fileexplorer.util.FileItem
 import com.private.fileexplorer.util.FileManager
 import com.private.fileexplorer.viewmodel.ExplorerUiState
@@ -49,8 +89,8 @@ fun FileExplorerScreen(viewModel: FileExplorerViewModel) {
                 .padding(innerPadding),
         ) {
             when {
-                state.isLoading -> LoadingIndicator()
-                state.error != null -> ErrorMessage(state.error!!)
+                state.isLoading       -> LoadingIndicator()
+                state.error != null   -> ErrorMessage(state.error!!)
                 state.items.isEmpty() -> EmptyFolder()
                 else -> FileList(
                     items = state.items,
@@ -63,7 +103,7 @@ fun FileExplorerScreen(viewModel: FileExplorerViewModel) {
     }
 }
 
-// ─── Top Bar ──────────────────────────────────────────────────────────────────
+// ─── Top Bar ─────────────────────────────────────────────────────────────────
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -75,7 +115,7 @@ private fun ExplorerTopBar(
     onToggleHidden: () -> Unit,
 ) {
     val pathLabel = state.currentPath?.absolutePath ?: "Almacenamiento"
-    val shortPath = if (pathLabel.length > 40) "…${pathLabel.takeLast(37)}" else pathLabel
+    val shortPath = if (pathLabel.length > 44) "…${pathLabel.takeLast(41)}" else pathLabel
 
     TopAppBar(
         title = {
@@ -113,9 +153,9 @@ private fun ExplorerTopBar(
             IconButton(onClick = onToggleHidden) {
                 Icon(
                     imageVector = if (state.showHidden) Icons.Filled.VisibilityOff
-                    else Icons.Filled.Visibility,
+                                  else Icons.Filled.Visibility,
                     contentDescription = if (state.showHidden) "Ocultar archivos ocultos"
-                    else "Mostrar archivos ocultos",
+                                         else "Mostrar archivos ocultos",
                 )
             }
         },
@@ -125,7 +165,7 @@ private fun ExplorerTopBar(
     )
 }
 
-// ─── Lista de archivos ────────────────────────────────────────────────────────
+// ─── Lista de archivos ───────────────────────────────────────────────────────
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
@@ -148,7 +188,10 @@ private fun FileList(
             }
             items(folders, key = { it.file.absolutePath }) { item ->
                 FileItemRow(item = item, onClick = { onItemClick(item) })
-                HorizontalDivider(thickness = 0.5.dp, color = MaterialTheme.colorScheme.outlineVariant)
+                HorizontalDivider(
+                    thickness = 0.5.dp,
+                    color = MaterialTheme.colorScheme.outlineVariant,
+                )
             }
         }
 
@@ -160,7 +203,10 @@ private fun FileList(
             }
             items(files, key = { it.file.absolutePath }) { item ->
                 FileItemRow(item = item, onClick = { onItemClick(item) })
-                HorizontalDivider(thickness = 0.5.dp, color = MaterialTheme.colorScheme.outlineVariant)
+                HorizontalDivider(
+                    thickness = 0.5.dp,
+                    color = MaterialTheme.colorScheme.outlineVariant,
+                )
             }
         }
     }
@@ -191,7 +237,6 @@ private fun FileItemRow(item: FileItem, onClick: () -> Unit) {
             .padding(horizontal = 16.dp, vertical = 10.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        // Icono de tipo
         FileTypeIcon(item = item, modifier = Modifier.size(40.dp))
 
         Spacer(modifier = Modifier.width(14.dp))
@@ -233,10 +278,9 @@ private fun FileItemRow(item: FileItem, onClick: () -> Unit) {
 
 @Composable
 private fun FileTypeIcon(item: FileItem, modifier: Modifier = Modifier) {
-    val (icon, tint) = when {
-        item.isDirectory -> Icons.Filled.Folder to ColorFolder
-        else -> fileIconFor(item.extension) to fileTypeColor(item.extension)
-    }
+    val icon = if (item.isDirectory) Icons.Filled.Folder else fileIconFor(item.extension)
+    val tint = if (item.isDirectory) ColorFolder else fileTypeColor(item.extension)
+
     Surface(
         modifier = modifier,
         shape = MaterialTheme.shapes.small,
@@ -262,14 +306,13 @@ private fun fileIconFor(extension: String): ImageVector = when (extension.lowerc
     "xls", "xlsx"                                               -> Icons.Filled.TableChart
     "ppt", "pptx"                                               -> Icons.Filled.Slideshow
     "zip", "rar", "7z", "tar", "gz"                             -> Icons.Filled.FolderZip
-    "apk"                                                       -> Icons.Filled.Android
     "kt", "java", "py", "js", "ts", "html", "css",
     "json", "xml", "sh", "c", "cpp", "h"                       -> Icons.Filled.Code
     "txt", "md", "log", "csv"                                   -> Icons.Filled.TextSnippet
     else                                                        -> Icons.Filled.InsertDriveFile
 }
 
-// ─── Estados de UI ────────────────────────────────────────────────────────────
+// ─── Estados de UI ───────────────────────────────────────────────────────────
 
 @Composable
 private fun LoadingIndicator() {
@@ -281,9 +324,12 @@ private fun LoadingIndicator() {
 @Composable
 private fun ErrorMessage(message: String) {
     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-        Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.padding(32.dp)) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            modifier = Modifier.padding(32.dp),
+        ) {
             Icon(
-                imageVector = Icons.Filled.ErrorOutline,
+                imageVector = Icons.Filled.Error,
                 contentDescription = null,
                 tint = MaterialTheme.colorScheme.error,
                 modifier = Modifier.size(48.dp),
@@ -310,7 +356,7 @@ private fun EmptyFolder() {
             )
             Spacer(modifier = Modifier.height(12.dp))
             Text(
-                text = "Carpeta vacía",
+                text = "No hay archivos en esta carpeta",
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )

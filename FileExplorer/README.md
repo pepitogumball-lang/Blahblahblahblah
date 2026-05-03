@@ -1,46 +1,80 @@
 # File Explorer — App Android privada
 
-Explorador de archivos moderno para Android, escrito en Kotlin con Jetpack Compose.
-Diseñado para uso personal, compilable desde GitHub Actions o Android Studio.
+Explorador de archivos moderno para Android, escrito en **Kotlin** con **Jetpack Compose**.
+Pensado para uso personal y privado. Compilable desde GitHub Actions sin configuración extra.
 
 ---
 
-## Características
+## Qué hace la app
 
-- Exploración completa del almacenamiento interno y externo
-- Soporte para el permiso `MANAGE_EXTERNAL_STORAGE` (API 30+)
-- Fallback a `READ_EXTERNAL_STORAGE` para API 26–29
-- Navegación con back stack (entrar/salir de carpetas)
-- Vista de carpetas y archivos con iconos por tipo
-- Botones de refrescar, subir nivel y volver al inicio
-- Toggle para mostrar/ocultar archivos ocultos
-- Interfaz Material3 con soporte para tema dinámico y modo oscuro
+- Muestra carpetas y archivos del almacenamiento del dispositivo
+- Ordena carpetas primero, luego archivos (ambos en orden alfabético)
+- Entra y sale de subcarpetas con back stack correcto
+- Botón de inicio para volver al almacenamiento raíz
+- Botón de refresco para volver a leer la carpeta actual
+- Icono diferente por tipo de archivo (imagen, video, audio, PDF, código, etc.)
+- Tamaño y fecha de modificación en cada ítem
+- Opción para mostrar u ocultar archivos ocultos (que empiezan por punto)
+- Estado vacío claro: "No hay archivos en esta carpeta"
+- Estado de error con mensaje legible si hay problemas de lectura
+- Manejo de permisos de almacenamiento con explicación antes de pedirlos
+
+---
+
+## Permisos por versión de Android
+
+| Versión Android | API | Permiso necesario | Cómo se concede |
+|---|---|---|---|
+| Android 11+ | ≥ 30 | `MANAGE_EXTERNAL_STORAGE` | Ajustes del sistema → "Acceso a todos los archivos" |
+| Android 10 y anteriores | 26–29 | `READ_EXTERNAL_STORAGE` | Diálogo estándar del sistema |
+
+La app explica el motivo del permiso antes de mandar al usuario a Ajustes. No hay comportamiento oculto.
 
 ---
 
 ## Requisitos de compilación
 
-| Herramienta | Versión mínima |
-|-------------|----------------|
-| JDK         | 17             |
+| Herramienta | Versión |
+|---|---|
+| JDK | 17 |
 | Android Gradle Plugin | 8.2.2 |
-| Gradle      | 8.6            |
-| Kotlin      | 1.9.22         |
-| compileSdk  | 34             |
-| minSdk      | 26             |
+| Kotlin | 1.9.22 |
+| Compose BOM | 2024.02.01 |
+| compileSdk / minSdk / targetSdk | 34 / 26 / 34 |
 
 ---
 
-## Compilar localmente (Android Studio)
+## Compilar desde GitHub Actions (recomendado)
 
-1. Clona el repositorio.
-2. Abre la carpeta `FileExplorer/` en Android Studio.
-3. Deja que Gradle sincronice las dependencias.
-4. Conecta un dispositivo o inicia un emulador.
-5. Pulsa **Run** o usa:
+Cada push a `main` dispara el workflow `.github/workflows/build.yml` automáticamente.
+
+El APK debug queda en **Actions → Build APK → artefacto `FileExplorer-debug-apk`**.
+
+Para lanzarlo manualmente:
+1. Ve a **Actions → Build APK**
+2. Pulsa **Run workflow**
+
+No necesitas instalar nada localmente para esto.
+
+---
+
+## Compilar localmente desde Android Studio
+
+1. Clona el repositorio
+2. Abre la carpeta `FileExplorer/` en Android Studio (no la raíz del repo)
+3. Android Studio descarga Gradle automáticamente al sincronizar
+4. Conecta un dispositivo o inicia un emulador
+5. Pulsa **Run ▶** o usa desde terminal:
 
 ```bash
 cd FileExplorer
+gradle assembleDebug
+```
+
+Si prefieres usar `./gradlew`, primero genera el wrapper:
+```bash
+cd FileExplorer
+gradle wrapper --gradle-version 8.6
 ./gradlew assembleDebug
 ```
 
@@ -51,25 +85,24 @@ FileExplorer/app/build/outputs/apk/debug/app-debug.apk
 
 ---
 
-## Compilar desde GitHub Actions
+## Instalar en el dispositivo
 
-Cada push a `main` dispara el workflow `.github/workflows/build.yml` automáticamente.
-El APK debug queda disponible como artefacto descargable en la pestaña **Actions** del repositorio.
+```bash
+adb install FileExplorer/app/build/outputs/apk/debug/app-debug.apk
+```
 
-Para compilar manualmente desde la interfaz de GitHub:
-1. Ve a **Actions → Build APK**.
-2. Pulsa **Run workflow**.
+O copia el APK al dispositivo y ábrelo manualmente (necesitas permitir instalación de fuentes desconocidas).
 
 ---
 
-## Usar la app
+## Automatización Git desde Replit
 
-1. Instala el APK en tu dispositivo (`adb install app-debug.apk` o copia manual).
-2. Al abrir la app, se te pedirá el permiso de almacenamiento.
-   - En Android 11+: pulsa "Abrir ajustes del sistema" y activa "Acceso a todos los archivos".
-   - En Android 10 y anteriores: acepta el permiso cuando el sistema te lo solicite.
-3. Una vez concedido el permiso, la app abre el almacenamiento externo automáticamente.
-4. Navega tocando carpetas; usa la flecha atrás para subir un nivel, el icono de casa para ir al inicio.
+```bash
+python3 pusher.py
+```
+
+El script hace `git add .` → commit con timestamp → `git push origin main` automáticamente.
+Usa la variable de entorno `GITHUB_PERSONAL_ACCESS_TOKEN` para autenticarse.
 
 ---
 
@@ -77,42 +110,35 @@ Para compilar manualmente desde la interfaz de GitHub:
 
 ```
 FileExplorer/
+├── .github/workflows/build.yml           # CI/CD: compila APK en cada push
 ├── app/
+│   ├── build.gradle                      # Dependencias y configuración del módulo
+│   ├── proguard-rules.pro
 │   └── src/main/
+│       ├── AndroidManifest.xml           # Permisos y declaración de Activity
 │       ├── java/com/private/fileexplorer/
-│       │   ├── MainActivity.kt              # Punto de entrada
+│       │   ├── MainActivity.kt           # Punto de entrada — decide qué pantalla mostrar
 │       │   ├── ui/
-│       │   │   ├── FileExplorerScreen.kt   # Pantalla principal
-│       │   │   ├── PermissionScreen.kt     # Pantalla de permisos
-│       │   │   └── theme/                  # Colores, tipografía, tema
+│       │   │   ├── FileExplorerScreen.kt # Lista de archivos con todos los estados
+│       │   │   ├── PermissionScreen.kt   # Explicación + botón de permiso
+│       │   │   └── theme/
+│       │   │       ├── Color.kt          # Paleta de colores
+│       │   │       ├── Theme.kt          # Tema Material3 + helper de colores por tipo
+│       │   │       └── Type.kt           # Tipografía
 │       │   ├── viewmodel/
-│       │   │   └── FileExplorerViewModel.kt # Estado y lógica de navegación
+│       │   │   └── FileExplorerViewModel.kt  # Estado, navegación, back stack
 │       │   └── util/
-│       │       ├── FileManager.kt          # Operaciones de archivo
-│       │       └── PermissionHelper.kt     # Utilidades de permisos
-│       ├── res/values/
-│       └── AndroidManifest.xml
-├── .github/workflows/build.yml             # CI/CD para APK
-├── gradle/wrapper/
-└── build.gradle / settings.gradle
+│       │       ├── FileManager.kt        # Lectura de directorios, ordenado, tamaño
+│       │       └── PermissionHelper.kt   # Lógica de permisos por versión Android
+│       └── res/
+│           ├── drawable/                 # Iconos del launcher
+│           ├── mipmap-anydpi-v26/        # Adaptive icons
+│           └── values/                   # strings.xml, themes.xml
+├── build.gradle                          # Plugins del proyecto
+├── gradle.properties
+├── gradle/wrapper/gradle-wrapper.properties
+├── gradlew                               # Script de wrapper (requiere jar para funcionar)
+├── gradlew.bat                           # Script de wrapper para Windows
+├── local.properties.example             # Ejemplo de configuración local del SDK
+└── settings.gradle
 ```
-
----
-
-## Automatización Git
-
-Desde la raíz del repositorio (en Replit):
-
-```bash
-python3 pusher.py
-```
-
-El script detecta cambios, hace commit con timestamp y hace push a `main` usando el token de GitHub.
-
----
-
-## Notas
-
-- La app es de uso privado y no está pensada para Google Play.
-- `minifyEnabled` está desactivado en release para facilitar depuración.
-- Los crasheos durante la navegación están mitigados con manejo de errores en `FileManager`.

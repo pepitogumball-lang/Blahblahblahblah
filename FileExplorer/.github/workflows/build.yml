@@ -21,10 +21,12 @@ jobs:
         with:
           java-version: '17'
           distribution: 'temurin'
-          cache: gradle
 
-      - name: Dar permisos al wrapper de Gradle
-        run: chmod +x FileExplorer/gradlew
+      # Instala Gradle 8.6 directamente — no depende del gradle-wrapper.jar binario
+      - name: Configurar Gradle 8.6
+        uses: gradle/actions/setup-gradle@v3
+        with:
+          gradle-version: '8.6'
 
       - name: Cachear dependencias de Gradle
         uses: actions/cache@v4
@@ -38,7 +40,7 @@ jobs:
 
       - name: Compilar APK debug
         working-directory: FileExplorer
-        run: ./gradlew assembleDebug --stacktrace
+        run: gradle assembleDebug --stacktrace
 
       - name: Subir APK como artefacto
         uses: actions/upload-artifact@v4
@@ -47,8 +49,7 @@ jobs:
           path: FileExplorer/app/build/outputs/apk/debug/app-debug.apk
           retention-days: 30
 
-      - name: Mostrar información del APK
-        working-directory: FileExplorer
+      - name: Mostrar ruta del APK generado
         run: |
           echo "=== APK generado ==="
-          ls -lh app/build/outputs/apk/debug/
+          ls -lh FileExplorer/app/build/outputs/apk/debug/

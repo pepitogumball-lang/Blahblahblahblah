@@ -1,124 +1,74 @@
 package com.private.fileexplorer.util
 
+import android.Manifest
 import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Build
 import android.os.Environment
 import android.provider.Settings
 import androidx.core.content.ContextCompat
-import android.content.pm.PackageManager
-import android.Manifest
 
 /**
- * Estado actual del permiso de almacenamiento en el dispositivo.
+ * Utilidades para verificar y solicitar permisos de almacenamiento.
+ *
+ * Estrategia por versión de Android:
+ *   - API 30+ (Android 11+): MANAGE_EXTERNAL_STORAGE — se concede desde Ajustes del sistema.
+ *   - API 26–29: READ_EXTERNAL_STORAGE — se solicita con requestPermissions estándar.
  */
-enum class StoragePermissionState {
-    /** Acceso total concedido (MANAGE_EXTERNAL_STORAGE en API 30+). */
-    FULL_ACCESS_GRANTED,
-    /** Acceso de lectura concedido (READ_EXTERNAL_STORAGE en API 26-32). */
-    READ_ACCESS_GRANTED,
-    /** Acceso granular concedido (READ_MEDIA_* en API 33+). */
-    MEDIA_ACCESS_GRANTED,
-    /** Sin permisos. */
-    DENIED,
-}
-
 object PermissionHelper {
 
     /**
-     * Evalúa el estado actual de permisos de almacenamiento
-     * considerando la versión de Android del dispositivo.
+     * Devuelve true si hay algún nivel de acceso a almacenamiento concedido.
+     * Es el único método que necesita llamarse para decidir si mostrar o no el explorador.
      */
-    fun getStoragePermissionState(context: Context): StoragePermissionState {
-        return when {
-            Build.VERSION.SDK_INT >= Build.VERSION_CODES.R -> {
-                if (Environment.isExternalStorageManager()) {
-                    StoragePermissionState.FULL_ACCESS_GRANTED
-                } else {
-                    StoragePermissionState.DENIED
-                }
-            }
-            Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU -> {
-                val images = ContextCompat.checkSelfPermission(
-                    context, Manifest.permission.READ_MEDIA_IMAGES
-                ) == PackageManager.PERMISSION_GRANTED
-                val video = ContextCompat.checkSelfPermission(
-                    context, Manifest.permission.READ_MEDIA_VIDEO
-                ) == PackageManager.PERMISSION_GRANTED
-                val audio = ContextCompat.checkSelfPermission(
-                    context, Manifest.permission.READ_MEDIA_AUDIO
-                ) == PackageManager.PERMISSION_GRANTED
-                if (images || video || audio) {
-                    StoragePermissionState.MEDIA_ACCESS_GRANTED
-                } else {
-                    StoragePermissionState.DENIED
-                }
-            }
-            else -> {
-                val read = ContextCompat.checkSelfPermission(
-                    context, Manifest.permission.READ_EXTERNAL_STORAGE
-                ) == PackageManager.PERMISSION_GRANTED
-                if (read) StoragePermissionState.READ_ACCESS_GRANTED
-                else StoragePermissionState.DENIED
-            }
+    fun hasAnyStorageAccess(context: Context): Boolean {
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            // Android 11+ — necesita MANAGE_EXTERNAL_STORAGE (incluye API 33+)
+            Environment.isExternalStorageManager()
+        } else {
+            // Android 10 y anteriores — permiso de lectura estándar
+            ContextCompat.checkSelfPermission(
+                context,
+                Manifest.permission.READ_EXTERNAL_STORAGE,
+            ) == PackageManager.PERMISSION_GRANTED
         }
     }
 
-    /** True si hay algún nivel de acceso concedido. */
-    fun hasAnyStorageAccess(context: Context): Boolean =
-        getStoragePermissionState(context) != StoragePermissionState.DENIED
-
-    /** True si tiene acceso total (MANAGE_EXTERNAL_STORAGE). */
-    fun hasFullStorageAccess(): Boolean =
-        Build.VERSION.SDK_INT >= Build.VERSION_CODES.R &&
-                Environment.isExternalStorageManager()
-
     /**
-     * Devuelve la lista de permisos de tiempo de ejecución a solicitar
-     * según la versión de Android.
-     * En API 30+ el permiso MANAGE_EXTERNAL_STORAGE se concede desde Ajustes,
-     * no mediante requestPermissions, por eso se devuelve lista vacía en esos casos.
+     * Lista de permisos de tiempo de ejecución a solicitar según versión Android.
+     * En API 30+ devuelve lista vacía porque MANAGE_EXTERNAL_STORAGE
+     * no se puede pedir con requestPermissions — requiere el intent especial de Ajustes.
      */
     fun getRuntimePermissionsToRequest(): Array<String> {
-        return when {
-            Build.VERSION.SDK_INT >= Build.VERSION_CODES.R -> {
-                // Usamos el intent de ajustes especiales — sin requestPermissions
-                emptyArray()
-            }
-            Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU -> {
-                arrayOf(
-                    Manifest.permission.READ_MEDIA_IMAGES,
-                    Manifest.permission.READ_MEDIA_VIDEO,
-                    Manifest.permission.READ_MEDIA_AUDIO,
-                )
-            }
-            else -> {
-                arrayOf(
-                    Manifest.permission.READ_EXTERNAL_STORAGE,
-                    Manifest.permission.WRITE_EXTERNAL_STORAGE,
-                )
-            }
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            emptyArray()
+        } else {
+            arrayOf(
+                Manifest.permission.READ_EXTERNAL_STORAGE,
+                Manifest.permission.WRITE_EXTERNAL_STORAGE,
+            )
         }
     }
 
     /**
-     * Devuelve el Intent que lleva al usuario a la pantalla correcta
-     * de ajustes para conceder el permiso según la versión de Android.
+     * Intent para llevar al usuario a la pantalla correcta de permisos.
+     *  - API 30+: pantalla específica de "Acceso a todos los archivos".
+     *  - API < 30: pantalla de detalles de la app en Ajustes.
      */
     fun buildSettingsIntent(context: Context): Intent {
         return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-            // Pantalla específica de "Acceso a todos los archivos"
             try {
                 Intent(
                     Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION,
-                    Uri.parse("package:${context.packageName}")
+                    Uri.parse("package:${context.packageName}"),
                 )
-            } catch (e: Exception) {
+            } catch (_: Exception) {
+                // Fallback por si el intent específico no existe en el ROM
                 Intent(Settings.ACTION_MANAGE_ALL_FILES_ACCESS_PERMISSION)
             }
         } else {
-            // Ajustes generales de la app
             Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
                 data = Uri.parse("package:${context.packageName}")
             }
@@ -126,17 +76,18 @@ object PermissionHelper {
     }
 
     /**
-     * Texto explicativo para el usuario según versión de Android.
+     * Explicación clara y honesta del permiso que se va a solicitar.
+     * Se muestra al usuario ANTES de mandarlo a Ajustes.
      */
-    fun permissionExplanation(): String = when {
-        Build.VERSION.SDK_INT >= Build.VERSION_CODES.R ->
-            "Esta app necesita el permiso \"Acceso a todos los archivos\" para explorar tu almacenamiento. " +
-                    "Pulsa el botón para abrirlo en Ajustes del sistema y actívalo manualmente."
-        Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU ->
-            "Esta app necesita acceso a tus archivos multimedia para mostrarte fotos, videos y audio. " +
-                    "Concede los permisos cuando el sistema te los solicite."
-        else ->
-            "Esta app necesita permiso de acceso al almacenamiento externo para explorar archivos y carpetas. " +
-                    "Concede el permiso cuando el sistema te lo solicite."
+    fun permissionExplanation(): String {
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            "Esta app necesita el permiso \"Acceso a todos los archivos\" para poder " +
+                "explorar carpetas y archivos en tu almacenamiento. Sin él, no puede leer " +
+                "nada. Pulsa el botón, busca la app en la lista y activa el permiso."
+        } else {
+            "Esta app necesita permiso de acceso al almacenamiento externo para mostrarte " +
+                "tus archivos y carpetas. Sin él, no puede leer el contenido de tu dispositivo. " +
+                "Pulsa el botón y acepta el permiso cuando el sistema te lo solicite."
+        }
     }
 }

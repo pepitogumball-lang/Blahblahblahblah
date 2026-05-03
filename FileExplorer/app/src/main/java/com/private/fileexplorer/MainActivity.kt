@@ -5,16 +5,12 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
-import androidx.compose.runtime.*
-import androidx.lifecycle.Lifecycle
-import androidx.lifecycle.lifecycleScope
-import androidx.lifecycle.repeatOnLifecycle
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import com.private.fileexplorer.ui.FileExplorerScreen
 import com.private.fileexplorer.ui.PermissionScreen
 import com.private.fileexplorer.ui.theme.FileExplorerTheme
-import com.private.fileexplorer.util.PermissionHelper
 import com.private.fileexplorer.viewmodel.FileExplorerViewModel
-import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
 
@@ -34,7 +30,7 @@ class MainActivity : ComponentActivity() {
                     PermissionScreen(
                         onPermissionGranted = {
                             viewModel.refreshPermissionState()
-                        }
+                        },
                     )
                 }
             }
@@ -43,8 +39,8 @@ class MainActivity : ComponentActivity() {
 
     override fun onResume() {
         super.onResume()
-        // Cada vez que la app vuelve a primer plano (p.ej. desde Ajustes)
-        // revalidamos el estado de permisos.
+        // Revalida el permiso cada vez que el usuario vuelve a la app
+        // (por ejemplo, después de activarlo en los Ajustes del sistema).
         viewModel.refreshPermissionState()
     }
 }
